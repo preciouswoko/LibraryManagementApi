@@ -1,6 +1,7 @@
 using LibraryManagement.Data.Connection;
 using LibraryManagement.Service.Interfaces;
 using LibraryManagement.Service.Repository;
+using LibraryManagement.Service.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -40,6 +41,11 @@ namespace LibraryManagementApi
             services.AddDbContext<LibraryDbContext>(options => options.UseSqlServer(Configuration.GetConnectionString("LibraryDbConnecion")));
             services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
             services.AddTransient<IUserRepository, UserRepository>();
+            services.AddTransient<IUserService, UserService>();
+            services.AddTransient<IBookRepository, BookRepository>();
+            services.AddTransient<IBookService, BookService>();
+
+
             // For Identity
             services.AddIdentity< IdentityUser, IdentityRole>().
                 AddEntityFrameworkStores<LibraryDbContext>().AddDefaultTokenProviders();
