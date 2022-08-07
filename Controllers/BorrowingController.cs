@@ -45,16 +45,20 @@ namespace LibraryManagementApi.Controllers
         // PUT: BorrowingController/Edit
         [Route("ReturnBook")]
         [HttpPut]
-        public async Task<IActionResult> ReturnBook( string bookname, [FromBody] DateTime returndate)
+        public async Task<IActionResult> ReturnBook(ReturnBookReq bookReq)
         {
             try
             {
                 if (ModelState.IsValid)
                 {
-                    var res = await _service.ReturnBook(bookname, returndate);
+                    var res = await _service.ReturnBook(bookReq);
                     if (res == 1)
                     {
                         return (StatusCode(400, new StandardResponse { ResponseCode = "99", ResponseMessage = "Book Not Found", Data = null }));
+                    }
+                    if (res == 2)
+                    {
+                        return (StatusCode(400, new StandardResponse { ResponseCode = "99", ResponseMessage = "Book already return", Data = null }));
                     }
                     return Ok(new StandardResponse { ResponseCode = "00", ResponseMessage = $"Sucessfully return book and you owe NGN{res}" });
                 }
