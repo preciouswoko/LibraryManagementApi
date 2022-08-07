@@ -1,6 +1,7 @@
 ﻿using LibraryManagement.Data.Response;
 using LibraryManagement.Data.ViewModel;
 using LibraryManagement.Service.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System;
 using System.Collections.Generic;
@@ -28,9 +29,9 @@ namespace LibraryManagementApi.Controllers
             try
             {
                 var val = _bookService.GetBooks();
-                if (val == null)
+                if (val.Count == 0)
                 {
-                    return (StatusCode(400, new StandardResponse { ResponseCode = "99", ResponseMessage = "Id Not Found", Data = null }));
+                    return (StatusCode(400, new StandardResponse { ResponseCode = "99", ResponseMessage = "No Book to Display", Data = null }));
                 }
                 return Ok(new StandardResponse { ResponseCode = "00", ResponseMessage = "Sucessfull", Data = val });
             }
@@ -44,6 +45,7 @@ namespace LibraryManagementApi.Controllers
         // POST: BookController /Create
         [Route("AddBooks")]
         [HttpPost]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> AddBooks([FromBody] BookRequest request)
         {
 
@@ -54,8 +56,8 @@ namespace LibraryManagementApi.Controllers
                     return (StatusCode(400, new StandardResponse { ResponseCode = "99", ResponseMessage = "PLease Add the required value", Data = null }));
 
                 }
-               await _bookService.AddBook(request);
-                return Ok(new StandardResponse { ResponseCode = "00", ResponseMessage = "Sucessfull", Data = null });
+                var result = await _bookService.AddBook(request);
+                return Ok(new StandardResponse { ResponseCode = "00", ResponseMessage = "Sucessfull", Data = result });
             }
             catch (Exception e)
             {
@@ -75,7 +77,7 @@ namespace LibraryManagementApi.Controllers
                     var val = await _bookService.GetByBookId(bookid);
                     if (val.Count == 0)
                     {
-                        return (StatusCode(400, new StandardResponse { ResponseCode = "99", ResponseMessage = "Id Not Found", Data = null }));
+                        return (StatusCode(400, new StandardResponse { ResponseCode = "99", ResponseMessage = "Book Not Found", Data = null }));
                     }
                     return Ok(new StandardResponse { ResponseCode = "00", ResponseMessage = "Sucessfull", Data = val });
                 }
@@ -93,18 +95,19 @@ namespace LibraryManagementApi.Controllers
         // PUT: BookController/Edit
         [Route("UpdateBook")]
         [HttpPut]
-        public async Task<IActionResult> UpdateBook(int id, [FromBody] BookRequest request)
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> UpdateBook([FromBody] BookRequest request)
         {
             try
             {
                 if (ModelState.IsValid)
                 {
-                    bool res = await _bookService.UpdateBook(id, request);
+                    bool res = await _bookService.UpdateBook(request);
                     if (res == false)
                     {
-                        return (StatusCode(400, new StandardResponse { ResponseCode = "99", ResponseMessage = "Id Not Found", Data = null }));
+                        return (StatusCode(400, new StandardResponse { ResponseCode = "99", ResponseMessage = "Book Not Found", Data = null }));
                     }
-                    return Ok(new StandardResponse { ResponseCode = "00", ResponseMessage = "Sucessfull", Data = null });
+                    return Ok(new StandardResponse { ResponseCode = "00", ResponseMessage = "Sucessfull", Data = res });
                 }
                 return (StatusCode(400, new StandardResponse { ResponseCode = "99", ResponseMessage = "invalid details", Data = null }));
 
@@ -119,6 +122,7 @@ namespace LibraryManagementApi.Controllers
         // DELETE BookController/Delete
         [Route("DeleteBook")]
         [HttpDelete]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> DeleteBook(int id)
         {
             try
@@ -128,7 +132,7 @@ namespace LibraryManagementApi.Controllers
                 {
                     return (StatusCode(400, new StandardResponse { ResponseCode = "99", ResponseMessage = "Id Not Found", Data = null }));
                 }
-                return Ok(new StandardResponse { ResponseCode = "00", ResponseMessage = "Sucessfull", Data = null });
+                return Ok(new StandardResponse { ResponseCode = "00", ResponseMessage = "Sucessfull", Data = res });
             }
             catch (Exception e)
             {

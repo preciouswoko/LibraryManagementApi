@@ -2,6 +2,7 @@
 using LibraryManagement.Data.Response;
 using LibraryManagement.Data.ViewModel;
 using LibraryManagement.Service.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -166,11 +167,40 @@ namespace LibraryManagementApi.Controllers
 
         [HttpGet]
         [Route("GetUsers")]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> GetUsers()
         {
             try
             {
-                return Ok( _user.GetUsers());
+                var val = _user.GetUsers();
+                if (val.Count == 0)
+                {
+                    return (StatusCode(400, new StandardResponse { ResponseCode = "99", ResponseMessage = "No User to Display", Data = null }));
+                }
+                return Ok(new StandardResponse { ResponseCode = "00", ResponseMessage = "Sucessfull", Data = val });
+               // return Ok( _user.GetUsers());
+            }
+            catch (Exception)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError,
+                    "Error retrieving data from the database");
+            }
+        }
+
+        [HttpGet]
+        [Authorize(Roles = "Admin")]
+        [Route("GetReports")]
+        public async Task<IActionResult> GetReports()
+        {
+            try
+            {
+                var val = _user.GetAllReport();
+                if (val.Result.Count == 0)
+                {
+                    return (StatusCode(400, new StandardResponse { ResponseCode = "99", ResponseMessage = "No Report to Display", Data = null }));
+                }
+                return Ok(new StandardResponse { ResponseCode = "00", ResponseMessage = "Sucessfull", Data = val });
+                
             }
             catch (Exception)
             {
@@ -182,7 +212,7 @@ namespace LibraryManagementApi.Controllers
         // GET: AccountController/Id
         [Route("Getuser")]
         [HttpGet]
-        public async Task<IActionResult> Getuser(int userid)
+        public async Task<IActionResult> Getuser(Guid userid)
         {
             try
             {
@@ -208,10 +238,39 @@ namespace LibraryManagementApi.Controllers
 
 
 
+
+        // GET: AccountController/Id
+        [Route("GetReport")]
+        [HttpGet]
+        public async Task<IActionResult> GetReport(Guid userid)
+        {
+            try
+            {
+                if (ModelState.IsValid)
+                {
+                    var val = await _user.GetuserReport(userid);
+                    Log.Information($" retrieved information from GetReport {val}");
+                    if (val == null)
+                    {
+                        return (StatusCode(400, new StandardResponse { ResponseCode = "99", ResponseMessage = "Report Not Found", Data = null }));
+                    }
+                    return Ok(new StandardResponse { ResponseCode = "00", ResponseMessage = "Sucessfull", Data = val });
+                }
+                return (StatusCode(400, new StandardResponse { ResponseCode = "99", ResponseMessage = "Report Not Found", Data = null }));
+            }
+            catch (Exception e)
+            {
+                return StatusCode(500, e.Message);
+            }
+
+
+        }
+
+
         // PUT: AccountController/Edit
         [Route("UpdateUser")]
         [HttpPut]
-        public async Task<IActionResult> UpdateUser(int id, [FromBody] UserRequest request)
+        public async Task<IActionResult> UpdateUser(Guid id, [FromBody] UpdateUser request)
         {
             try
             {
@@ -222,7 +281,7 @@ namespace LibraryManagementApi.Controllers
                     {
                         return (StatusCode(400, new StandardResponse { ResponseCode = "99", ResponseMessage = "Id Not Found", Data = null }));
                     }
-                    return Ok(new StandardResponse { ResponseCode = "00", ResponseMessage = "Sucessfull", Data = null });
+                    return Ok(new StandardResponse { ResponseCode = "00", ResponseMessage = "Sucessfull", Data = res });
                 }
                 return (StatusCode(400, new StandardResponse { ResponseCode = "99", ResponseMessage = "invalid details", Data = null }));
 
@@ -237,7 +296,7 @@ namespace LibraryManagementApi.Controllers
         // DELETE AccountController/Delete
         [Route("DeleteUser")]
         [HttpDelete]
-        public async Task<IActionResult> DeleteUser(int id)
+        public async Task<IActionResult> DeleteUser(Guid id)
         {
             try
             {
@@ -246,7 +305,7 @@ namespace LibraryManagementApi.Controllers
                 {
                     return (StatusCode(400, new StandardResponse { ResponseCode = "99", ResponseMessage = "Id Not Found", Data = null }));
                 }
-                return Ok(new StandardResponse { ResponseCode = "00", ResponseMessage = "Sucessfull", Data = null });
+                return Ok(new StandardResponse { ResponseCode = "00", ResponseMessage = "Sucessfull", Data = res });
             }
             catch (Exception e)
             {
@@ -254,6 +313,38 @@ namespace LibraryManagementApi.Controllers
             }
 
         }
+
+        [HttpPost]
+        [Route("ResetPassword")]
+        public async Task<IActionResult> ResetPassword([FromBody] ForgettenPasswordRequest model)
+        {
+            try
+            {
+                
+                var user = await _userManager.FindByNameAsync(model.UserName);
+                var token = await _userManager.GeneratePasswordResetTokenAsync(user);
+                if (user != null )
+                {
+                    var resetPassResult = await _userManager.ResetPasswordAsync(user, token, model.NewPassword);
+                    if (!resetPassResult.Succeeded)
+                    {
+                        foreach (var error in resetPassResult.Errors)
+                        {
+
+                        }
+                            return Unauthorized();
+                    }
+                        return Ok();
+                }
+                return Unauthorized();
+            }
+            catch (Exception e)
+            {
+                return StatusCode(500, e);
+            }
+
+        }
+
         //[HttpGet("{search}")]
         //public async Task<ActionResult<IEnumerable<Employee>>> Search(string name, Gender? gender)
         //{

@@ -44,6 +44,8 @@ namespace LibraryManagementApi
             services.AddTransient<IUserService, UserService>();
             services.AddTransient<IBookRepository, BookRepository>();
             services.AddTransient<IBookService, BookService>();
+            services.AddTransient<IBorrowingRepository, BorrowingRepository>();
+            services.AddTransient<IBorrowingService, BorrowingService>();
 
 
             // For Identity
